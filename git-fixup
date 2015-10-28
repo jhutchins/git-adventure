@@ -958,14 +958,17 @@ change_deep() {
 #
 #  Note that any other commits you have performed since you did that "bad" operation will then be lost. You could git cherry-pick or git rebase -p --onto those other commits over.
 #
-#
-#  Recovering from a borked/stupid/moribund merge
-#
-#  So, you were in the middle of a merge, have encountered one or more conflicts, and you have now decided that it was a big mistake and want to get out of the merge.
-#
-#  The fastest way out of the merge is git merge --abort
-#
-#
+badmerge() {
+echo "Recovering from a borked/stupid/moribund merge"
+echo
+echo "So, you were in the middle of a merge, have encountered one or more conflicts, and"
+echo "you have now decided that it was a big mistake and want to get out of the merge."
+echo
+echo "The fastest way out of the merge is 'git merge --abort'"
+
+    run_cmd "git merge --abort"
+}
+
 badrebase() {
     echo "Recovering from a borked/stupid/moribund rebase"
     echo
