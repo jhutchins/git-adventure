@@ -69,6 +69,8 @@ start() {
 }
 
 committedp() {
+    echo
+    echo
     echo "Have you committed?"
     echo
     echo "If you have not yet committed that which you do not want, git does not know"
@@ -106,6 +108,8 @@ committedp() {
 }
 
 uncommitted() {
+    echo
+    echo
     echo "Discard everything or just some things?"
     echo
     echo "So you have not yet committed, the question is now whether you want to undo"
@@ -138,6 +142,8 @@ uncommitted() {
 }
 
 uncommitted_commit() {
+    echo
+    echo
     echo "How to save uncommitted changes"
     echo
     echo "There are five ways you can save your uncommitted change. I also suggest you"
@@ -197,6 +203,8 @@ uncommitted_commit() {
 }
 
 uncommitted_everything() {
+    echo
+    echo
     echo "How to undo all uncommitted changes"
     echo
     echo "So you have not yet committed and you want to undo everything. Well, best"
@@ -243,6 +251,8 @@ uncommitted_everything() {
 }
 
 uncommitted_somethings() {
+    echo
+    echo
     echo "How to undo some uncommitted changes"
     echo
     echo "So you have not yet committed and you want to undo some things, well"
@@ -276,6 +286,8 @@ uncommitted_somethings() {
 }
 
 committed() {
+    echo
+    echo
     echo "Do you have uncommitted stuff in your working directory?"
     echo
     echo "So you have committed. However, before we go about fixing or removing whatever"
@@ -313,6 +325,8 @@ committed() {
 }
 
 committed_really() {
+    echo
+    echo
     echo "Have you pushed?"
     echo
     echo "So you have committed, the question is now whether you have made your changes"
@@ -358,6 +372,8 @@ committed_really() {
 }
 
 unpushed() {
+    echo
+    echo
     echo "Do you want to discard all unpushed changes on this branch?"
     echo
     echo "There is a shortcut in case you want to discard all changes made on this branch"
@@ -393,6 +409,8 @@ unpushed() {
 }
 
 committed_really() {
+    echo
+    echo
     echo "Discarding all local commits on this branch"
     echo
     echo "In order to discard all local commits on this branch, to make the local branch"
@@ -402,6 +420,8 @@ committed_really() {
 }
 
 replace_all_unpushed() {
+    echo
+    echo
     echo "Replacing all branch history/contents"
     echo
     echo "If instead of discarding all local commits, you can make your branch identical"
@@ -429,6 +449,8 @@ replace_all_unpushed() {
 }
 
 fix_unpushed() {
+    echo
+    echo
     echo "Is the commit you want to fix the most recent?"
     echo
     echo "While the techniques mentioned to deal with deeper commits will work on the"
@@ -474,6 +496,8 @@ fix_unpushed() {
 }
 
 change_last() {
+    echo
+    echo
     echo "Do you want to remove or change the commit message/contents of the last commit?"
     echo
     echo "  1) I want to remove the last commit"
@@ -501,6 +525,8 @@ change_last() {
 }
 
 remove_last() {
+    echo
+    echo
     echo "Removing the last commit"
     echo
     echo "To remove the last commit from git, you can simply run 'git reset --hard HEAD^'"
@@ -558,6 +584,8 @@ remove_last() {
 }
 
 rework_last() {
+    echo
+    echo
     echo "Reworking the last commit"
     echo
     echo "WARNING: These techniques should only be used for non-merge commits. If you"
@@ -593,6 +621,8 @@ rework_last() {
 }
 
 move_commit() {
+    echo
+    echo
     echo "Moving a commit from one branch to another"
     echo
     echo "So, you have a commit which is in the wrong place and you want to move it from"
@@ -650,6 +680,8 @@ move_commit() {
 }
 
 update_last() {
+    echo
+    echo
     echo "Updating the last commit's contents or commit message"
     echo
     echo "To update the last commit's contents, author, or commit message for a commit"
@@ -675,6 +707,8 @@ update_last() {
 }
 
 change_deep() {
+    echo
+    echo
     echo 'Do you want to remove an entire commit?'
     echo
     echo '  1) Yes, I want to remove an entire commit'
@@ -959,17 +993,21 @@ change_deep() {
 #  Note that any other commits you have performed since you did that "bad" operation will then be lost. You could git cherry-pick or git rebase -p --onto those other commits over.
 #
 badmerge() {
-echo "Recovering from a borked/stupid/moribund merge"
-echo
-echo "So, you were in the middle of a merge, have encountered one or more conflicts, and"
-echo "you have now decided that it was a big mistake and want to get out of the merge."
-echo
-echo "The fastest way out of the merge is 'git merge --abort'"
+    echo
+    echo
+    echo "Recovering from a borked/stupid/moribund merge"
+    echo
+    echo "So, you were in the middle of a merge, have encountered one or more conflicts, and"
+    echo "you have now decided that it was a big mistake and want to get out of the merge."
+    echo
+    echo "The fastest way out of the merge is 'git merge --abort'"
 
     run_cmd "git merge --abort"
 }
 
 badrebase() {
+    echo
+    echo
     echo "Recovering from a borked/stupid/moribund rebase"
     echo
     echo "So, you were in the middle of a rebase, have encountered one or more conflicts,"
