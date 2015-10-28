@@ -966,11 +966,16 @@ change_deep() {
 #  The fastest way out of the merge is git merge --abort
 #
 #
-#  Recovering from a borked/stupid/moribund rebase
-#
-#  So, you were in the middle of a rebase, have encountered one or more conflicts, and you have now decided that it was a big mistake and want to get out of the merge.
-#
-#  The fastest way out of the merge is git rebase --abort
-#
+badrebase() {
+    echo "Recovering from a borked/stupid/moribund rebase"
+    echo
+    echo "So, you were in the middle of a rebase, have encountered one or more conflicts,"
+    echo "and you have now decided that it was a big mistake and want to get out of the merge."
+    echo
+    echo  "The fastest way out of the merge is git rebase --abort"
+    echo
+
+    run_cmd "git rebase --abort"
+}
 
 start
