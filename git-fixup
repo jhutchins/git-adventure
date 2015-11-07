@@ -732,266 +732,594 @@ change_deep() {
     esac
 }
 
-#Removing an entire commit
-#
-#I call this operation "cherry-pit" since it is the inverse of a "cherry-pick". You must first identify the SHA of the commit you wish to remove. You can do this using gitk --date-order or using git log --graph --decorate --oneline You are looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.
-#
-#
-#git rebase -p --onto SHA^ SHA
-#Obviously replace "SHA" with the reference you want to get rid of. The "^" in that command is literal.
-#
-#However, please be warned. If some of the commits between SHA and the tip of your branch are merge commits, it is possible that git rebase -p will be unable to properly recreate them. Please inspect the resulting merge topology gitk --date-order HEAD ORIG_HEAD and contents to ensure that git did want you wanted. If it did not, there is not really any automated recourse. You can reset back to the commit before the SHA you want to get rid of, and then cherry-pick the normal commits and
-#manually re-merge the "bad" merges. Or you can just suffer with the inappropriate topology (perhaps creating fake merges git merge --ours otherbranch so that subsequent development work on those branches will be properly merged in with the correct merge-base).
-#
-#
-#Do you want to remove/change/rename a particular file/directory from all commits during all of git's history
-#
-#Yes please, I want to make a change involving all git commits
-#No, I only want to change a single commit
-#
-#Changing all commits during all of git's history
-#
-#You have not pushed but still somehow want to change all commits in all of git's history? Strange.
-#
-#Not just removing data (eg. re-arranging directory structure for all commits), or just wanting to use standard tools
-#Want to only remove unwanted data (big files, private data, etc) and am willing to use a third party tool to do the job more quickly
-#
-#Use The BFG to remove unwanted data, like big files or passwords, from Git repository history.
-#
-#Disclaimer, the author of this document has not qualified this tool (including for safety or usability for any purpose), but recognizes the need which this tool fills for large repositories.
-#
-#The BFG is a simpler, faster alternative to git filter-branch, specifically designed for cleansing bad data out of your Git repository history - it operates over all branches and tags in your project to purge data you don't want retained anywhere. Some examples:
-#
-#Remove all blobs bigger than 1 megabyte (to make your repo take up less space):
-#
-#
-#$ bfg --strip-blobs-bigger-than 1M  my-repo.git
-#Replace all passwords listed in a file with ***REMOVED*** wherever they occur in your repository :
-#
-#
-#$ bfg --replace-text passwords.txt  my-repo.git
-#
-#Arbitrarily changing all commits during all of git's history
-#
-#git filter-branch is a powerful, complex command that allows you to perform arbitary scriptable operations on all commits in git repository history. This flexibility can make it quite slow on big repos, and makes using the command quite difficult, so I will simply point you at the manual page and remind you that best practice is to always use "--tag-name-filter cat -- --all" unless you are really sure you know what you are doing.
-#
-#BTW, this is the one command I referred to earlier which will update all tags and branches, at least if you use the best practice arguments.
-#
-#
-#Is a merge commit involved?
-#
-#If the commit you are trying to change is a merge commit, or if there is a merge commit between the commit you are trying to change and the tip of the branch you are on, then you need to do some special handling of the situation.
-#
-#Yes, a merge commit is involved
-#No, only simple commits
-#
-#Changing a single commit involving only simple commits
-#
-#You must first identify the SHA of the commit you wish to remove. You can do this using gitk --date-order or using git log --graph --decorate --oneline You are looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.
-#
-#
-#git rebase -i SHA^
-#Obviously replace "SHA" with the reference you want to get rid of. The "^" in that command is literal.
-#
-#You will be dumped in an editor with a bunch of lines starting with pick. The oldest commit, the one you are probably interested in changing, is first. You will want to change the "pick" to "reword" or "edit", or perhaps even "squash" depending on what your goal is. Please read the manual page for more information. A document on Post-Production Editing using Git goes through much of the major uses of git rebase is some detail. The use case is a little different, but the fundamental techniques
-#are not.
-#
-#When using "edit", to change contents or author, when you are dumped into the shell to make your change, well make your change, git add as normal, and then run git commit --amend (including changing the author information with --author). When you are satisfied, you should run git rebase --continue
-#
-#
-#Changing a single commit involving a merge
-#
-#Oh dear. This is going to get a little complicated. It should all work out, though. You will need to use a nonce branch as a placeholder. I will call the nonce branch "nonce" in the following example. However, you may use any branch name that is not currently in use. You can delete it immediately after you are done.
-#
-#Identify the SHA of the commit you wish to modify.
-#
-#You can do this using gitk --date-order or using git log --graph --decorate --oneline You are looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.
-#
-#Remember the name of the branch you are currently on
-#
-#The line with a star on it in the git branch output is the branch you are currently on. I will use "$master" in this example, but substitute your branch name for "$master" in the following commands.
-#
-#Create and checkout a nonce branch pointing at that commit.
-#
-#
-#git checkout -b nonce SHA
-#Obviously replace "SHA" with the reference you want to modify.
-#
-#Modify the commit
-#
-#You need to get the index into the correct state you wish the commit to reflect. If you are changing the commit message only, you need do nothing. If you are changing the file contents, typically you would modify the working directory and use git add as normal.
-#
-#Note if you wish to restore a file to a known good state, you can use git checkout GOODSHA -- path/to/filename.
-#
-#Once the index is in the correct state, then you can run git commit --amend to update the last commit. Yes, you can use "-a" if you want to avoid the git add suggested in the previous paragraph.
-#
-#If the commit you are updating is a merge commit, ensure that the log message reflects that.
-#
-#Put the remaining commits after the new one you just created
-#
-#Remembering to substitute the correct branch name for $master
-#
-#
-#git rebase -p --onto $(git rev-parse nonce) HEAD^ $master
-#Validate that the topology is still good
-#
-#If some of the commits after the commit you changed are merge commits, please be warned. It is possible that git rebase -p will be unable to properly recreate them. Please inspect the resulting merge topology gitk --date-order HEAD ORIG_HEAD to ensure that git did want you wanted. If it did not, there is not really any automated recourse. You can reset back to the commit before the SHA you want to get rid of, and then cherry-pick the normal commits and manually re-merge the "bad" merges. Or
-#you can just suffer with the inappropriate topology (perhaps creating fake merges git merge --ours otherbranch so that subsequent development work on those branches will be properly merged in with the correct merge-base).
-#
-#Delete the nonce branch
-#
-#You don't need it. It was just there to communicate an SHA between two steps in the above process. git branch -d nonce
-#
-#
-#Can you make a positive commit to fix the problem and what is the fix class?
-#
-#Rewriting public history is a bad idea. It requires everyone else to do special things and you must publicly announce your failure. Ideally you will create either a commit to just fix the problem, or a new git revert commit to create a new commit which undoes what the commit target of the revert did.
-#
-#Yes, I can make a new commit but the bad commit trashed a particular file in error (among other good things I want to keep)
-#Yes, I can make a new commit and the bad commit is a merge commit I want to totally remove
-#Yes, I can make a new commit but the bad commit is a simple commit I want to totally remove
-#Yes, I can make a new commit and the bad commit has an error in it I want to fix
-#Yes, I can make a new commit but history is all messed up and I have a replacement branch
-#No, I am a bad person and must rewrite published history
-#
-#Making a new commit to fix an old commit
-#
-#If the problem in the old commit is just something was done incorrectly, go ahead and make a normal commit to fix the problem. Feel free to reference the old commit SHA in the commit message, and if you are into the blame-based development methodology, make fun of the person who made the mistake (or someone who recently left if you made the mistake).
-#
-#
-#Making a new commit to restore a file deleted earlier
-#
-#The file may have been deleted or every change to that file in that commit (and all commits since then) should be destroyed. If so, you can simply checkout a version of the file which you know is good.
-#
-#You must first identify the SHA of the commit containing the good version of the file. You can do this using gitk --date-order or using git log --graph --decorate --oneline or perhaps git log --oneline -- filename You are looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.
-#
-#
-#git checkout SHA -- path/to/filename
-#Obviously replace "SHA" with the reference that is good. You can then add and commit as normal to fix the problem.
-#
-#
-#Reverting an old simple pushed commit
-#
-#To create an positive commit to remove the effects of a simple (non-merge) commit, you must first identify the SHA of the commit you want to revert. You can do this using gitk --date-order or using git log --graph --decorate --oneline You are looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.
-#
-#
-#git revert SHA
-#Obviously replace "SHA" with the reference you want to revert. If you want to revert multiple SHA, you may specify a range or a list of SHA.
-#
-#
-#Reverting a merge commit
-#
-#Oh dear. This is going to get complicated.
-#
-#To create an positive commit to remove the effects of a merge commit, you must first identify the SHA of the commit you want to revert. You can do this using gitk --date-order or using git log --graph --decorate --oneline You are looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.
-#
-#Undoing the file modifications caused by the merge is about as simple as you might hope. git revert -m 1 SHA. (Obviously replace "SHA" with the reference you want to revert; -m 1 will revert changes from all but the first parent, which is almost always what you want.) Unfortunately, this is just the tip of the iceberg. The problem is, what happens months later, long after you have exiled this problem from your memory, when you try again to merge these branches (or any other branches they
-#have been merged into)? Because git has it tracked in history that a merge occurred, it is not going to attempt to remerge what it has already merged, and even worse, if you merge from the branch where you did the revert you will undo the changes on the branch where they were made. (Imagine you revert a premature merge of a long-lived topic branch into master and later merge master into the topic branch to get other changes for testing.)
-#
-#One option is actually to do this reverse merge immediately, annihilating any changes before the bad merge, and then to "revert the revert" to restore them. This leaves the changes removed from the branch you mistakenly merged to, but present on their original branch, and allows merges in either direction without loss. This is the simplest option, and in many cases, can be the best.
-#
-#A disadvantage of this approach is that git blame output is not as useful (all the changes will be attributed to the revert of the revert) and git bisect is similarly impaired. Another disadvantage is that you must merge all current changes in the target of the bad merge back into the source; if your development style is to keep branches clean, this may be undesirable, and if you rebase your branches (e.g. with git pull --rebase), it could cause complications unless you are careful to use
-#git rebase -p to preserve merges.
-#
-#In the following example please replace $destination with the name of the branch that was the destination of the bad merge, $source with the name of the branch that was the source of the bad merge, and $sha with the SHA-1 hash ID of the bad merge itself.
-#
-#
-#git checkout $destination
-#git revert $sha
-## save the SHA-1 of the revert commit to un-revert it later
-#revert=`git rev-parse HEAD`
-#git checkout $source
-#git merge $destination
-#git revert $revert
-#Another option is to abandon the branch you merged from, recreate it from the previous merge-base with the commits since then rebased or cherry-picked over, and use the recreated branch from now on. Then the new branch is unrelated and will merge properly. Of course, if you have pushed the donor branch you cannot use the same name (that would be rewriting public history and is bad) so everyone needs to remember to use the new branch. Hopefully you have something like gitolite where you can
-#close the old branch name.
-#
-#This approach has the advantage that the recreated donor branch will have cleaner history, but especially if there have been many commits (and especially merges) to the branch, it can be a lot of work. At this time, I will not walk you through the process of recreating the donor branch. Given sufficient demand I can try to add that. However, if you look at howto/revert-a-faulty-merge.txt (also shipped as part of the git distribution) it will provide more words than you can shake a stick at.
-#
-#
-#Rewriting an old branch with a new branch with a new commit
-#
-#If the state of a branch is contaminated beyond repair and you have pushed that branch or otherwise do not want to rewrite the existing history, then you can make a new commit which overwrites the original branch with the new one and pretends this was due to a merge. The command is a bit complicated, and will get rid of all ignored or untracked files in your working directory, so please be sure you have properly backed up everything.
-#
-#In the following example please replace $destination with the name of the branch whose contents you want to overwrite. $source should be replaced with the name of the branch whose contents are good.
-#
-#You actually are being provided with two methods. The first set is more portable but generates two commits. The second knows about the current internal files git uses to do the necessary work in one commit. Only one command is different and a second command runs at a different time.
-#
-#
-## Portable method to overwrite one branch with another in two commits
-#git clean -dfx
-#git checkout $destination
-#git reset --hard $source
-#git reset --soft ORIG_HEAD
-#git add -fA .
-#git commit -m "Rewrite $destination with $source"
-#git merge -s ours $source
-#or
-#
-#
-## Hacky method to overwrite one branch with another in one commit
-#git clean -dfx
-#git checkout $destination
-#git reset --hard $source
-#git reset --soft ORIG_HEAD
-#git add -fA .
-#git rev-parse $source > .git/MERGE_HEAD
-#git commit -m "Rewrite $destination with $source"
-#
-#I am a bad person and must rewrite published history
-#
-#Hopefully you read the previous reference and fully understand why this is bad and what you have to tell everyone else to do in order to recover from this condition. Assuming this, you simply need to go to the parts of this document which assume that you have not yet pushed and do them as normal. Then you need to do a "force push" git push -f to thrust your updated history upon everyone else. As you read in the reference, this may be denied by default by your upstream repository (see git
-#config receive.denyNonFastForwards, but can be disabled (temporarily I suggest) if you have access to the server. You then will need to send mail to everyone who might have pulled the history telling them that history was rewritten and they need to git pull --rebase and do a bit of history rewriting of their own if they branched or tagged from the now outdated history.
-#
-#Proceed with fixing the old commit.
-#
-#
-#I have lost some commits I know I made
-#
-#First make sure that it was not on a different branch. Try git log -Sfoo --all where "foo" is replaced with something unique in the commits you made. You can also search with gitk --all --date-order to see if anything looks likely.
-#
-#Check your stashes, git stash list, to see if you might have stashed instead of committing. You can also visualize what the stashes might be associated with via:
-#
-#
-#gitk --all --date-order $(git stash list | awk -F: '{print $1};')
-#Next, you should probably look in other repositories you have lying around including ones on other hosts and in testing environments, and in your backups.
-#
-#Once you are fully convinced that it is well and truly lost, you can start looking elsewhere in git. Specifically, you should first look at the reflog which contains the history of what happened to the tip of your branches for the past two weeks or so. You can of course say git log -g or git reflog to view it, but it may be best visualized with:
-#
-#
-#gitk --all --date-order $(git reflog --pretty=%H)
-#Next you can look in git's lost and found. Dangling commits get generated for many good reasons including resets and rebases. Still those activities might have mislaid the commits you were interested in. These might be best visualized with gitk --all --date-order $(git fsck | grep "dangling commit" | awk '{print $3;}')
-#
-#The last place you can look is in dangling blobs. These are files which have been git added but not attached to a commit for some (usually innocuous) reason. To look at the files, one at a time, run:
-#
-#
-#git fsck | grep "dangling blob" | while read x x s; do
-#  git show $s | less;
-#  done
-#  Once you find the changes you are interested in, there are several ways you can proceed. You can git reset --hard SHA your current branch to the history and current state of that SHA (probably not recommended for stashes), you can git branch newbranch SHA to link the old history to a new branch name (also not recommended for stashes), you can git stash apply SHA (for the non-index commit in a git-stash), you can git stash merge SHA or git cherry-pick SHA (for either part of a stash or
-#  non-stashes), etc.
-#
-#
-#  Undoing the last few git operations affecting HEAD/my branch's tip
-#
-#  Practically every git operation which affects the repository is recorded in the git reflog. You may then use the reflog to look at the state of the branches at previous times or even go back to the state of the local branch at the time.
-#
-#  While this happens for every git command affecting HEAD, it is usually most interesting when attempting to recover from a bad rebase or reset or an --amend'ed commit. There are better ways (listed by the rest of this document) from recovering from the more mundane reflog updates.
-#
-#  The first thing you need to do is identify the SHA of the good state of your branch. You can do this by looking at the output of git log -g or, my preference, you can look graphically at gitk --all --date-order $(git log -g --pretty=%H)
-#
-#  Once you have found the correct state of your branch, you can get back to that state by running
-#
-#
-#  git reset --hard SHA
-#  You could also link that old state to a new branch name using
-#
-#
-#  git checkout -b newbranch SHA
-#  Obviously replace "SHA" in both commands with the reference you want to get back to.
-#
-#  Note that any other commits you have performed since you did that "bad" operation will then be lost. You could git cherry-pick or git rebase -p --onto those other commits over.
-#
+remove_deep() {
+    echo "Removing an entire commit"
+    echo
+    echo 'I call this operation "cherry-pit" since it is the inverse of a "cherry-pick".'
+    echo 'You must first identify the SHA of the commit you wish to remove. You can do this'
+    echo "using 'gitk --date-order' or using 'git log --graph --decorate --oneline' You are"
+    echo "looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes,"
+    echo 'if you know the "^" or "~" shortcuts you may use those.'
+    echo
+    echo "+-------------------------------+"
+    echo "| git rebase -p --onto SHA^ SHA |"
+    echo "+-------------------------------+"
+    echo
+    echo 'Obviously replace "SHA" with the reference you want to get rid of. The "^" in that'
+    echo 'command is literal.'
+    echo
+    echo 'However, please be warned. If some of the commits between SHA and the tip of your'
+    echo "branch are merge commits, it is possible that 'git rebase -p' will be unable to"
+    echo "properly recreate them. Please inspect the resulting merge topology"
+    echo "'gitk --date-order HEAD ORIG_HEAD' and contents to ensure that git did want you"
+    echo "wanted. If it did not, there is not really any automated recourse. You can reset"
+    echo "back to the commit before the SHA you want to get rid of, and then cherry-pick"
+    echo 'the normal commits and manually re-merge the "bad" merges. Or you can just suffer'
+    echo "with the inappropriate topology (perhaps creating fake merges"
+    echo "'git merge --ours otherbranch' so that subsequent development work on those"
+    echo 'branches will be properly merged in with the correct merge-base).'
+    echo 
+    echo "What is the SHA you want to remove?: "
+
+    read sha
+    run_cmd "git rebase -p --onto $sha^ $sha"
+}
+
+modify_deep() {
+    echo "Do you want to remove/change/rename a particular file/directory from all commits"
+    echo "during all of git's history"
+    echo
+    echo "  1) Yes please, I want to make a change involving all git commits"
+    echo "  2) No, I only want to change a single commit"
+
+    read choice
+
+    case $choice in
+        1)
+            modify_deep
+            ;;
+        2)
+            change_single_deep
+            ;;
+        *)
+            echo "$choice is not a valid option"
+            echo
+            echo
+            modify_deep
+    esac
+}
+
+bulk_rewrite_history() {
+    echo "Changing all commits during all of git's history"
+    echo
+    echo "You have not pushed but still somehow want to change all commits in all of git's"
+    echo "history? Strange."
+    echo
+    echo "  1) Not just removing data (eg. re-arranging directory structure for all commits),"
+    echo "     or just wanting to use standard tools"
+    echo "  2) Want to only remove unwanted data (big files, private data, etc) and am"
+    echo "     willing to use a third party tool to do the job more quickly"
+    echo "Choice: "
+
+    read choice
+
+    case $choice in
+        1)
+            filterbranch
+            ;;
+        2)
+            bfg
+            ;;
+        *)
+            echo "$choice is not a valid option"
+            echo
+            echo
+            bulk_rewrite_history
+    esac
+}
+
+bfg() {
+    echo "Use The BFG to remove unwanted data, like big files or passwords, from Git"
+    echo "repository history."
+    echo
+    echo "Disclaimer, the author of this document has not qualified this tool (including"
+    echo "for safety or usability for any purpose), but recognizes the need which this tool"
+    echo "fills for large repositories."
+    echo
+    echo "The BFG is a simpler, faster alternative to git filter-branch, specifically"
+    echo "designed for cleansing bad data out of your Git repository history - it operates"
+    echo "over all branches and tags in your project to purge data you don't want retained"
+    echo "anywhere. Some examples:"
+    echo
+    echo "Remove all blobs bigger than 1 megabyte (to make your repo take up less space):"
+    echo
+    echo "+-------------------------------------------------+"
+    echo "| $ bfg --strip-blobs-bigger-than 1M  my-repo.git |"
+    echo "+-------------------------------------------------+"
+    echo
+    echo "Replace all passwords listed in a file with ***REMOVED*** wherever they occur in"
+    echo "your repository :"
+    echo
+    echo "+-------------------------------------------------+"
+    echo "| $ bfg --replace-text passwords.txt  my-repo.git |"
+    echo "+-------------------------------------------------+"
+    echo
+    echo "Best of luck to you"
+}
+
+filterbranch() {
+    echo "Arbitrarily changing all commits during all of git's history"
+    echo
+    echo "'git filter-branch' is a powerful, complex command that allows you to perform"
+    echo "arbitary scriptable operations on all commits in git repository history. This"
+    echo "flexibility can make it quite slow on big repos, and makes using the command"
+    echo "quite difficult, so I will simply point you at the manual page and remind you"
+    echo 'that best practice is to always use "--tag-name-filter cat -- --all" unless you'
+    echo "are really sure you know what you are doing."
+
+    run_cmd "git filter-branch --help"
+}
+
+change_single_deep() {
+    echo "Is a merge commit involved?"
+    echo
+    echo "If the commit you are trying to change is a merge commit, or if there is a merge"
+    echo "commit between the commit you are trying to change and the tip of the branch you"
+    echo "are on, then you need to do some special handling of the situation."
+    echo
+    echo "  1) Yes, a merge commit is involved"
+    echo "  2) No, only simple commits"
+    echo "Choice: "
+
+    read choice
+
+    case $choice in
+        1)
+            change_single_deep_merge
+            ;;
+        2)
+            change_single_deep_simple
+            ;;
+        *)
+            echo "$choice is not a valid option"
+            echo
+            echo
+            change_single_deep
+    esac
+}
+
+change_single_deep_simple() {
+    echo "Changing a single commit involving only simple commits"
+    echo
+    echo "You must first identify the SHA of the commit you wish to remove. You can do this"
+    echo "using 'gitk --date-order' or using 'git log --graph --decorate --oneline' You are"
+    echo "looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation). Yes,"
+    echo 'if you know the "^" or "~" shortcuts you may use those.'
+    echo
+    echo "+--------------------+"
+    echo "| git rebase -i SHA^ |"
+    echo "+--------------------+"
+    echo
+    echo 'Obviously replace "SHA" with the reference you want to get rid of. The "^" in'
+    echo "that command is literal."
+    echo
+    echo "You will be dumped in an editor with a bunch of lines starting with pick. The"
+    echo "oldest commit, the one you are probably interested in changing, is first. You"
+    echo 'will want to change the "pick" to "reword" or "edit", or perhaps even "squash"'
+    echo "depending on what your goal is. Please read the manual page for more information."
+    echo "A document on Post-Production Editing using Git goes through much of the major"
+    echo "uses of git rebase is some detail. The use case is a little different, but the"
+    echo "fundamental techniques are not."
+    echo
+    echo 'When using "edit", to change contents or author, when you are dumped into the'
+    echo 'shell to make your change, well make your change, 'git add' as normal, and then run'
+    echo "'git commit --amend' (including changing the author information with --author)."
+    echo "When you are satisfied, you should run 'git rebase --continue'"
+    echo
+    echo "What is the SHA you want to replace?: "
+
+    read sha
+    run_cmd "git rebase -i $sha^"
+}
+
+change_single_deep_merge() {
+    echo Changing a single commit involving a merge
+    echo 
+    echo Oh dear. This is going to get a little complicated. It should all work out,
+    echo though. You will need to use a nonce branch as a placeholder. I will call the
+    echo 'nonce branch "nonce" in the following example. However, you may use any branch'
+    echo name that is not currently in use. You can delete it immediately after you are done.
+    echo 
+    echo '1) Identify the SHA of the commit you wish to modify.'
+    echo 
+    echo '    You can do this using "gitk --date-order" or using'
+    echo '    "git log --graph --decorate --oneline" You are looking for the 40 character'
+    echo '    SHA-1 hash ID (or the 7 character abbreviation). Yes, if you know the "^" or'
+    echo '    "~" shortcuts you may use those.'
+    echo 
+    echo '2) Remember the name of the branch you are currently on'
+    echo 
+    echo '    The line with a star on it in the git branch output is the branch you are'
+    echo '    currently on. I will use "$master" in this example, but substitute your'
+    echo '    branch name for "$master" in the following commands.'
+    echo 
+    echo '3) Create and checkout a nonce branch pointing at that commit.'
+    echo 
+    echo '    +---------------------------+' 
+    echo '    | git checkout -b nonce SHA |'
+    echo '    +---------------------------+'
+    echo
+    echo '    Obviously replace "SHA" with the reference you want to modify.'
+    echo 
+    echo '4) Modify the commit'
+    echo 
+    echo '    You need to get the index into the correct state you wish the commit to'
+    echo '    reflect. If you are changing the commit message only, you need do nothing.'
+    echo '    If you are changing the file contents, typically you would modify the'
+    echo '    working directory and use git add as normal.'
+    echo 
+    echo '    Note if you wish to restore a file to a known good state, you can use'
+    echo '    "git checkout GOODSHA -- path/to/filename".'
+    echo 
+    echo '    Once the index is in the correct state, then you can run '
+    echo '    "git commit --amend" to update the last commit. Yes, you can use "-a" if'
+    echo '    you want to avoid the "git add" suggested in the previous paragraph.'
+    echo 
+    echo '    If the commit you are updating is a merge commit, ensure that the log'
+    echo '    message reflects that.'
+    echo 
+    echo '5) Put the remaining commits after the new one you just created'
+    echo 
+    echo '    Remembering to substitute the correct branch name for $master'
+    echo 
+    echo '    +-----------------------------------------------------------+' 
+    echo '    | git rebase -p --onto $(git rev-parse nonce) HEAD^ $master |'
+    echo '    +-----------------------------------------------------------+' 
+    echo
+    echo '6) Validate that the topology is still good'
+    echo 
+    echo '    If some of the commits after the commit you changed are merge commits,'
+    echo '    please be warned. It is possible that "git rebase -p" will be unable to'
+    echo '    properly recreate them. Please inspect the resulting merge topology'
+    echo '    "gitk --date-order HEAD ORIG_HEAD" to ensure that git did want you wanted.'
+    echo '    If it did not, there is not really any automated recourse. You can reset'
+    echo '    back to the commit before the SHA you want to get rid of, and then'
+    echo '    cherry-pick the normal commits and manually re-merge the "bad" merges. Or'
+    echo '    you can just suffer with the inappropriate topology (perhaps creating fake'
+    echo '    merges "git merge --ours otherbranch" so that subsequent development work'
+    echo '    on those branches will be properly merged in with the correct merge-base).'
+    echo 
+    echo ' 7) Delete the nonce branch'
+    echo 
+    echo "You don't need it. It was just there to communicate an SHA between two steps in"
+    echo 'the above process. "git branch -d nonce"'
+}
+
+pushed() {
+    echo 'Can you make a positive commit to fix the problem and what is the fix class?'
+    echo
+    echo 'Rewriting public history is a bad idea. It requires everyone else to do special'
+    echo 'things and you must publicly announce your failure. Ideally you will create'
+    echo 'either a commit to just fix the problem, or a new "git revert" commit to create'
+    echo 'a new commit which undoes what the commit target of the revert did.'
+    echo
+    echo '  1) Yes, I can make a new commit but the bad commit trashed a particular file'
+    echo '     in error (among other good things I want to keep)'
+    echo '  2) Yes, I can make a new commit and the bad commit is a merge commit I want to'
+    echo '     totally remove'
+    echo '  3) Yes, I can make a new commit but the bad commit is a simple commit I want'
+    echo '     to totally remove'
+    echo '  4) Yes, I can make a new commit and the bad commit has an error in it I want'
+    echo '     to fix'
+    echo '  5) Yes, I can make a new commit but history is all messed up and I have a'
+    echo '     replacement branch'
+    echo '  6) No, I am a bad person and must rewrite published history'
+
+    read choice
+
+    case $choice in
+        1)
+            pushed_restore_file
+            ;;
+        2)
+            pushed_new_merge
+            ;;
+        3)
+            pushed_new_simple
+            ;;
+        4)
+            pushed_fixit
+            ;;
+        5)
+            branch_overlay_merge
+            ;;
+        6)
+            pushed_old
+            ;;
+        *)
+            echo "$choice is not a valid option"
+            echo
+            echo
+            pushed
+    esac
+}
+
+pushed_fixit() {
+    echo 'Making a new commit to fix an old commit'
+    echo
+    echo 'If the problem in the old commit is just something was done incorrectly, go'
+    echo 'ahead and make a normal commit to fix the problem. Feel free to reference the'
+    echo 'old commit SHA in the commit message, and if you are into the blame-based'
+    echo 'development methodology, make fun of the person who made the mistake (or someone'
+    echo 'who recently left if you made the mistake).'
+}
+
+pushed_restore_file() {
+    echo 'Making a new commit to restore a file deleted earlier'
+    echo
+    echo 'The file may have been deleted or every change to that file in that commit (and'
+    echo 'all commits since then) should be destroyed. If so, you can simply checkout a'
+    echo 'version of the file which you know is good.'
+    echo
+    echo 'You must first identify the SHA of the commit containing the good version of the'
+    echo 'file. You can do this using "gitk --date-order" or using'
+    echo '"git log --graph --decorate --oneline" or perhaps "git log --oneline -- filename"'
+    echo 'You are looking for the 40 character SHA-1 hash ID (or the 7 character'
+    echo 'abbreviation). Yes, if you know the "^" or "~" shortcuts you may use those.'
+    echo
+    echo '+--------------------------------------+'
+    echo '| git checkout SHA -- path/to/filename |'
+    echo '+--------------------------------------+'
+    echo
+    echo 'Obviously replace "SHA" with the reference that is good. You can then add and'
+    echo 'commit as normal to fix the problem.'
+}
+
+pushed_new_simple() {
+    echo 'Reverting an old simple pushed commit'
+    echo
+    echo 'To create an positive commit to remove the effects of a simple (non-merge)'
+    echo 'commit, you must first identify the SHA of the commit you want to revert. You'
+    echo 'can do this using "gitk --date-order" or using'
+    echo '"git log --graph --decorate --oneline" You are looking for the 40 character SHA-1'
+    echo 'hash ID (or the 7 character abbreviation). Yes, if you know the "^" or "~"'
+    echo 'shortcuts you may use those.'
+    echo
+    echo '+----------------+'
+    echo '| git revert SHA |'
+    echo '+----------------+'
+    echo
+    echo 'Obviously replace "SHA" with the reference you want to revert. If you want to'
+    echo 'revert multiple SHA, you may specify a range or a list of SHA.'
+}
+
+pushed_new_merge() {
+    echo 'Reverting a merge commit'
+    echo
+    echo 'Oh dear. This is going to get complicated.'
+    echo
+    echo 'To create an positive commit to remove the effects of a merge commit, you must'
+    echo 'first identify the SHA of the commit you want to revert. You can do this using'
+    echo '"gitk --date-order" or using "git log --graph --decorate --oneline" You are'
+    echo 'looking for the 40 character SHA-1 hash ID (or the 7 character abbreviation).'
+    echo 'Yes, if you know the "^" or "~" shortcuts you may use those.'
+    echo
+    echo 'Undoing the file modifications caused by the merge is about as simple as you'
+    echo 'might hope. "git revert -m 1 SHA". (Obviously replace "SHA" with the reference'
+    echo 'you want to revert; "-m 1" will revert changes from all but the first parent,'
+    echo 'which is almost always what you want.) Unfortunately, this is just the tip of'
+    echo 'the iceberg. The problem is, what happens months later, long after you have'
+    echo 'exiled this problem from your memory, when you try again to merge these branches'
+    echo '(or any other branches they have been merged into)? Because git has it tracked'
+    echo 'in history that a merge occurred, it is not going to attempt to remerge what it'
+    echo 'has already merged, and even worse, if you merge from the branch where you did'
+    echo 'the revert you will undo the changes on the branch where they were made.'
+    echo '(Imagine you revert a premature merge of a long-lived topic branch into master'
+    echo 'and later merge master into the topic branch to get other changes for testing.)'
+    echo
+    echo 'One option is actually to do this reverse merge immediately, annihilating any'
+    echo 'changes before the bad merge, and then to "revert the revert" to restore them.'
+    echo 'This leaves the changes removed from the branch you mistakenly merged to, but'
+    echo 'present on their original branch, and allows merges in either direction without'
+    echo 'loss. This is the simplest option, and in many cases, can be the best.'
+    echo
+    echo 'A disadvantage of this approach is that "git blame" output is not as useful (all'
+    echo 'the changes will be attributed to the revert of the revert) and "git bisect" is'
+    echo 'similarly impaired. Another disadvantage is that you must merge all current'
+    echo 'changes in the target of the bad merge back into the source; if your development'
+    echo 'style is to keep branches clean, this may be undesirable, and if you rebase your'
+    echo 'branches (e.g. with "git pull --rebase"), it could cause complications unless you'
+    echo 'are careful to use "git rebase -p" to preserve merges.'
+    echo
+    echo 'In the following example please replace $destination with the name of the branch'
+    echo 'that was the destination of the bad merge, $source with the name of the branch'
+    echo 'that was the source of the bad merge, and $sha with the SHA-1 hash ID of the bad'
+    echo 'merge itself.'
+    echo
+    echo '+-------------------------------------------------------------+'
+    echo '| git checkout $destination                                   |'
+    echo '| git revert $sha                                             |'
+    echo '| # save the SHA-1 of the revert commit to un-revert it later |'
+    echo '| revert=`git rev-parse HEAD`                                 |'
+    echo '| git checkout $source                                        |'
+    echo '| git merge $destination                                      |'
+    echo '| git revert $revert                                          |'
+    echo '+-------------------------------------------------------------+'
+    echo
+    echo 'Another option is to abandon the branch you merged from, recreate it from the'
+    echo 'previous merge-base with the commits since then rebased or cherry-picked over,'
+    echo 'and use the recreated branch from now on. Then the new branch is unrelated and'
+    echo 'will merge properly. Of course, if you have pushed the donor branch you cannot'
+    echo 'use the same name (that would be rewriting public history and is bad) so everyone'
+    echo 'needs to remember to use the new branch. Hopefully you have something like'
+    echo 'gitolite where you can close the old branch name.'
+    echo
+    echo 'This approach has the advantage that the recreated donor branch will have cleaner'
+    echo 'history, but especially if there have been many commits (and especially merges)'
+    echo 'to the branch, it can be a lot of work. At this time, I will not walk you through'
+    echo 'the process of recreating the donor branch. Given sufficient demand I can try to'
+    echo 'add that. However, if you look at howto/revert-a-faulty-merge.txt (also shipped'
+    echo 'as part of the git distribution) it will provide more words than you can shake a'
+    echo 'stick at.'
+}
+
+branch_overlay_merge() {
+    echo 'Rewriting an old branch with a new branch with a new commit'
+    echo 
+    echo 'If the state of a branch is contaminated beyond repair and you have pushed that'
+    echo 'branch or otherwise do not want to rewrite the existing history, then you can'
+    echo 'make a new commit which overwrites the original branch with the new one and'
+    echo 'pretends this was due to a merge. The command is a bit complicated, and will get'
+    echo 'rid of all ignored or untracked files in your working directory, so please be'
+    echo 'sure you have properly backed up everything.'
+    echo
+    echo 'In the following example please replace $destination with the name of the branch'
+    echo 'whose contents you want to overwrite. $source should be replaced with the name'
+    echo 'of the branch whose contents are good.'
+    echo
+    echo 'You actually are being provided with two methods. The first set is more portable'
+    echo 'but generates two commits. The second knows about the current internal files git'
+    echo 'uses to do the necessary work in one commit. Only one command is different and a'
+    echo 'second command runs at a different time.'
+    echo 
+    echo '+-----------------------------------------------------------------------+'
+    echo '| # Portable method to overwrite one branch with another in two commits |'
+    echo '| git clean -dfx                                                        |'
+    echo '| git checkout $destination                                             |'
+    echo '| git reset --hard $source                                              |'
+    echo '| git reset --soft ORIG_HEAD                                            |'
+    echo '| git add -fA .                                                         |'
+    echo '| git commit -m "Rewrite $destination with $source"                     |'
+    echo '| git merge -s ours $source                                             |'
+    echo '+-----------------------------------------------------------------------+'
+    echo
+    echo 'or'
+    echo
+    echo '+-------------------------------------------------------------------+'
+    echo '| # Hacky method to overwrite one branch with another in one commit |'
+    echo '| git clean -dfx                                                    |'
+    echo '| git checkout $destination                                         |'
+    echo '| git reset --hard $source                                          |'
+    echo '| git reset --soft ORIG_HEAD                                        |'
+    echo '| git add -fA .                                                     |'
+    echo '| git rev-parse $source > .git/MERGE_HEAD                           |'
+    echo '| git commit -m "Rewrite $destination with $source"                 |'
+    echo '+-------------------------------------------------------------------+'
+}
+
+pushed_old() {
+    echo 'I am a bad person and must rewrite published history'
+    echo
+    echo 'Hopefully you read the previous reference and fully understand why this is bad'
+    echo 'and what you have to tell everyone else to do in order to recover from this'
+    echo 'condition. Assuming this, you simply need to go to the parts of this document'
+    echo 'which assume that you have not yet pushed and do them as normal. Then you need'
+    echo 'to do a "force push" "git push -f" to thrust your updated history upon everyone'
+    echo 'else. As you read in the reference, this may be denied by default by your'
+    echo 'upstream repository (see "git config receive.denyNonFastForwards", but can be'
+    echo 'disabled (temporarily I suggest) if you have access to the server. You then will'
+    echo 'need to send mail to everyone who might have pulled the history telling them'
+    echo 'that history was rewritten and they need to "git pull --rebase" and do a bit of'
+    echo 'history rewriting of their own if they branched or tagged from the now'
+    echo 'outdated history.'
+    echo
+    echo 'Proceed with fixing the old commit. (Press any key)'
+
+    read
+    unpushed
+}
+
+lostnfound() {
+    echo 'I have lost some commits I know I made'
+    echo
+    echo 'First make sure that it was not on a different branch. Try'
+    echo '"git log -Sfoo --all" where "foo" is replaced with something unique in the'
+    echo 'commits you made. You can also search with "gitk --all --date-order" to see if'
+    echo 'anything looks likely.'
+    echo
+    echo 'Check your stashes, "git stash list", to see if you might have stashed instead'
+    echo 'of committing. You can also visualize what the stashes might be associated with'
+    echo 'via:'
+    echo
+    echo '+-------------------------------------------------------------------+'
+    echo "| gitk --all --date-order \$(git stash list | awk -F: '{print \$1};') |"
+    echo '+-------------------------------------------------------------------+'
+    echo
+    echo 'Next, you should probably look in other repositories you have lying around'
+    echo 'including ones on other hosts and in testing environments, and in your backups.'
+    echo
+    echo 'Once you are fully convinced that it is well and truly lost, you can start'
+    echo 'looking elsewhere in git. Specifically, you should first look at the reflog'
+    echo 'which contains the history of what happened to the tip of your branches for the'
+    echo 'past two weeks or so. You can of course say "git log -g" or "git reflog" to view'
+    echo 'it, but it may be best visualized with:'
+    echo
+    echo '+---------------------------------------------------+'
+    echo '| gitk --all --date-order $(git reflog --pretty=%H) |'
+    echo '+---------------------------------------------------+'
+    echo
+    echo "Next you can look in git's lost and found. Dangling commits get generated for"
+    echo 'many good reasons including resets and rebases. Still those activities might have'
+    echo 'mislaid the commits you were interested in. These might be best visualized with'
+    echo '"gitk --all --date-order $(git fsck | grep "dangling commit" | awk '"'{print \$3;}')"
+    echo
+    echo 'The last place you can look is in dangling blobs. These are files which have'
+    echo 'been git added but not attached to a commit for some (usually innocuous) reason.'
+    echo 'To look at the files, one at a time, run:'
+    echo
+    echo '+--------------------------------------------------------+'
+    echo '| git fsck | grep "dangling blob" | while read x x s; do |'
+    echo '|   git show $s | less;                                  |'
+    echo '| done                                                   |'
+    echo '+--------------------------------------------------------+'
+    echo
+    echo 'Once you find the changes you are interested in, there are several ways you can'
+    echo 'proceed. You can "git reset --hard SHA" your current branch to the history and'
+    echo 'current state of that SHA (probably not recommended for stashes), you can'
+    echo '"git branch newbranch SHA" to link the old history to a new branch name (also'
+    echo 'not recommended for stashes), you can "git stash apply SHA" (for the non-index'
+    echo 'commit in a git-stash), you can "git stash merge SHA" or "git cherry-pick SHA"'
+    echo '(for either part of a stash or non-stashes), etc.'
+}
+
+undo_tip() {
+    echo "Undoing the last few git operations affecting HEAD/my branch's tip"
+
+    echo 'Practically every git operation which affects the repository is recorded in the'
+    echo '"git reflog". You may then use the reflog to look at the state of the branches'
+    echo 'at previous times or even go back to the state of the local branch at the time.'
+    echo
+    echo 'While this happens for every git command affecting HEAD, it is usually most'
+    echo 'interesting when attempting to recover from a bad rebase or reset or an'
+    echo "--amend'ed commit. There are better ways (listed by the rest of this document)"
+    echo 'from recovering from the more mundane reflog updates.'
+    echo
+    echo 'The first thing you need to do is identify the SHA of the good state of your'
+    echo 'branch. You can do this by looking at the output of "git log -g" or, my'
+    echo 'preference, you can look graphically at'
+    echo '"gitk --all --date-order $(git log -g --pretty=%H)"'
+    echo
+    echo 'Once you have found the correct state of your branch, you can get back to that'
+    echo 'state by running'
+    echo
+    echo '+----------------------+'
+    echo '| git reset --hard SHA |'
+    echo '+----------------------+'
+    echo
+    echo 'You could also link that old state to a new branch name using'
+    echo
+    echo '+-------------------------------+'
+    echo '| git checkout -b newbranch SHA |'
+    echo '+-------------------------------+'
+    echo
+    echo 'Obviously replace "SHA" in both commands with the reference you want to get back'
+    echo 'to.'
+    echo
+    echo 'Note that any other commits you have performed since you did that "bad" operation'
+    echo 'will then be lost. You could "git cherry-pick" or "git rebase -p --onto" those'
+    echo 'other commits over.'
+}
+
 badmerge() {
     echo
     echo
